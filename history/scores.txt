@@ -1,0 +1,2 @@
+highest_score = 5661
+last_score = 2797
