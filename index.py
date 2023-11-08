@@ -7,38 +7,43 @@ import serial
 # Get the current working directory and required files
 current_directory = os.getcwd()
 score_file_path = os.path.join(os.getcwd(), 'history/scores.txt')
-play_car1_path = os.path.join(os.getcwd(), 'img/rolls-royce.png')
+player_car1_path = os.path.join(os.getcwd(), 'img/rolls-royce.png')
 player_car2_path = os.path.join(os.getcwd(), 'img/Aston-Martin.png')
 player_car3_path = os.path.join(os.getcwd(), 'img/bugatti.png')
+player_bike_path = os.path.join(os.getcwd(), 'img/bike-fotor.png')
 enemy_car1_path = os.path.join(os.getcwd(), 'img/police-car2.png')
 enemy_car2_path = os.path.join(os.getcwd(), 'img/police-car.png')
 enemy_car3_path = os.path.join(os.getcwd(), 'img/police-car.png')
-road_1_path = os.path.join(os.getcwd(),'img/dark-yellow2-road.png')
-road_2_path = os.path.join(os.getcwd(),'img/dark-yellow2-road.png')
+road_1_path = os.path.join(os.getcwd(), 'img/dark-yellow2-road.png')
+road_2_path = os.path.join(os.getcwd(), 'img/dark-yellow2-road.png')
 backGround_img_path = os.path.join(os.getcwd(), 'img/')
 backGround_sound_path = os.path.join(os.getcwd(), 'sounds/mixkit-game-level-music-689.wav')
 crash_sound_path = os.path.join(os.getcwd(), 'sounds/mixkit-truck-crash-with-explosion-1616.wav')
 
 # Connect to Arduino
-arduino = serial.Serial('/dev/ttyACM1', 9600)
+arduino = serial.Serial('/dev/ttyACM0', 9600)
+
 
 def read_arduino_data():
     try:
         serial_data = arduino.readline().decode().strip().split(",")
         joystick_x = int(serial_data[0])
         joystick_y = int(serial_data[1])
+        joystick_sw = int(serial_data[2])
+        if not joystick_sw:
+            joystick_sw = 0
     except (ValueError, IndexError):
         joystick_x, joystick_y = 0, 0
 
-    if 0 <= joystick_x <= 250 and 251 <= joystick_y <= 512:
-        return 1
-    elif 560 <= joystick_x  and 402 <= joystick_y <= 512:
-        return 2
-    elif 251 <= joystick_x <= 512 and 560 <= joystick_y:
-        return 3
-    elif 251 <= joystick_x <= 512 and 0 <= joystick_y <= 250:
-        return 4
-    return 0  # Return 0 if none of the conditions are met
+    if 0 <= joystick_x <= 250 and 251 <= joystick_y <= 558:
+        return 1, joystick_sw
+    elif 560 <= joystick_x and 402 <= joystick_y <= 558:
+        return 2, joystick_sw
+    elif 251 <= joystick_x <= 558 and 560 <= joystick_y:
+        return 3, joystick_sw
+    elif 251 <= joystick_x <= 558 and 0 <= joystick_y <= 250:
+        return 4, joystick_sw
+    return 0, joystick_sw
 
 
 # function to read Scores on  the scores file
@@ -56,6 +61,8 @@ def read_scores():
                 last_score = int(line.split('=')[-1])
 
     return highest_score, last_score
+
+
 # function to save scores on a file
 def save_scores(new_highest_score, new_last_score):
     try:
@@ -72,6 +79,7 @@ def save_scores(new_highest_score, new_last_score):
         file.write(f"highest_score = {existing_highest_score}\n")
         file.write(f"last_score = {new_last_score}\n")
 
+
 # function to scale the car images and return their dimensions
 
 def scale_car(image_path, target_width=100):
@@ -81,7 +89,7 @@ def scale_car(image_path, target_width=100):
     aspect_ratio = original_height / original_width
     target_height = int(target_width * aspect_ratio)
     scaled_car_image = pygame.transform.scale(car_image, (target_width, target_height))
-    return scaled_car_image, target_width,target_height
+    return scaled_car_image, target_width, target_height
 
 
 class CarRacing:
@@ -96,12 +104,13 @@ class CarRacing:
         self.clock = pygame.time.Clock()
         self.gameDisplay = None
         self.crashed = False
+        self.paused = False
         # Locating points
         self.m_right = int(self.display_width * (4 / 5) - 90)
         self.m_left = int(self.display_width * (1 / 5) + 40)
         self.count = 0
         # player car
-        self.carImg, self.scaled_car_width, car_height = scale_car(player_car2_path)
+        self.player_car, self.scaled_car_width, car_height = scale_car(player_car2_path)
         self.car_x_coordinate = (self.display_width * 0.5)
         self.car_y_coordinate = (self.display_height * 0.7)
         # Background
@@ -123,7 +132,6 @@ class CarRacing:
         self.m_left = int(self.display_width * (1 / 5) + 40)
         self.count = 0
 
-
         # audios
         pygame.mixer.music.load(backGround_sound_path)
         pygame.mixer.music.play(-1)
@@ -135,14 +143,13 @@ class CarRacing:
         pygame.display.set_caption('Car Dodge')
         pygame.mixer.init()
 
-
     def menu(self):
-        l_high_score,last_score = read_scores()
+        l_high_score, last_score = read_scores()
         menu_font = pygame.font.SysFont("comicsansms", 50)
         white = (255, 255, 255)
         menu_loop = True
         while menu_loop:
-            self.gameDisplay.fill((0,0,0))  # Fill the background with black
+            self.gameDisplay.fill((0, 0, 0))  # Fill the background with black
             menu_text = menu_font.render("Car Dodge", True, white)
             self.gameDisplay.blit(menu_text, (self.display_width * 0.35, self.display_height * 0.2))
             play_text = menu_font.render("1. Play Game", True, white)
@@ -166,27 +173,27 @@ class CarRacing:
                         print("Goodbye!")
                         pygame.quit()
                         menu_loop = False
+
     def detect_collisions(self):
-        if self.car_y_coordinate < self.enemy_car_start_y + self.enemy_car_height:
-            if (
-                    self.enemy_car_start_x < self.car_x_coordinate < self.enemy_car_start_x + self.enemy_car_width) or (
-                    self.enemy_car_start_x < self.car_x_coordinate + self.scaled_car_width < self.enemy_car_start_x + self.enemy_car_width):
+
+        if self.enemy_car_start_y <= self.car_y_coordinate <= (self.enemy_car_start_y + self.enemy_car_height - 30):
+            if self.enemy_car_start_x <= self.car_x_coordinate <= (self.enemy_car_start_x + self.enemy_car_width) or \
+                    self.enemy_car_start_x <= (self.car_x_coordinate + self.scaled_car_width) < (
+                    self.enemy_car_start_x + self.enemy_car_width):
                 self.crashed = True
                 self.crash_sound.play()
-                self.display_message("Game Over U knocked !!!")
-
-
+                self.display_message("Game Over !!!")
         if self.car_x_coordinate < self.m_left or self.car_x_coordinate > self.m_right:
             self.crashed = True
             self.display_message("Game Over !!!")
         save_scores(self.count, self.count)
+
     def show_background(self):
         self.gameDisplay.blit(self.bgImg, (self.bg_x, self.bg_y))
         self.gameDisplay.blit(self.bgImg, (self.bg_x, self.bg_y - self.display_height))
 
     def car(self, car_x_coordinate, car_y_coordinate):
-        self.gameDisplay.blit(self.carImg, (car_x_coordinate, car_y_coordinate))
-
+        self.gameDisplay.blit(self.player_car, (car_x_coordinate, car_y_coordinate))
 
     def start_game(self):
 
@@ -197,7 +204,18 @@ class CarRacing:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         self.crashed = True
-                arduino_data = read_arduino_data()
+                arduino_data, switch = read_arduino_data()
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_p]:
+                    self.paused = True
+                if keys[pygame.K_r]:
+                    self.paused = False
+                if self.paused:
+                    self.display_message("Paused")
+                    pygame.display.update()
+                    continue
+                if switch == 0:
+                    self.player_car, self.scaled_car_width, car_height = scale_car(player_bike_path)
 
                 if arduino_data == 3:
                     self.car_x_coordinate -= 20  # Move left
@@ -210,7 +228,7 @@ class CarRacing:
                         self.car_y_coordinate += 20  # Move backward
 
                 self.gameDisplay.fill(self.black)
-                #Logic to loop road image
+                # Logic to loop road image
                 self.bg_y += self.bg_speed
                 if self.bg_y >= self.display_height:
                     self.bg_y = 0
@@ -229,18 +247,13 @@ class CarRacing:
                 self.increase_speed()
                 self.detect_collisions()
 
-
-
-
-
                 pygame.display.update()
                 self.clock.tick(60)
-
 
     def display_message(self, msg):
         font = pygame.font.SysFont("comicsansms", 72, True)
         text = font.render(msg, True, self.red)
-        self.gameDisplay.blit(text, (self.m_left,self.display_width*1/3))
+        self.gameDisplay.blit(text, (self.m_left, self.display_width * 1 / 3))
         self.display_credit()
         pygame.display.update()
         self.clock.tick(60)
@@ -251,23 +264,24 @@ class CarRacing:
 
     def increase_speed(self):
         if self.count > 5000:
-            self .bg_speed = 15
+            self.bg_speed = 15
             self.enemy_car_speed = 17
+            self.player_car, self.scaled_car_width, car_height = scale_car(player_car1_path)
         elif self.count > 4000:
             self.bg_speed = 13
             self.enemy_car_speed = 15
+            self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car1_path)
         elif self.count > 3000:
             self.bg_speed = 12
             self.enemy_car_speed = 13.5
+            self.player_car, self.scaled_car_width, car_height = scale_car(player_car2_path)
         elif self.count > 2000:
             self.bg_speed = 9
             self.enemy_car_speed = 10
+            self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car2_path)
         elif self.count > 1000:
             self.bg_speed = 6
             self.enemy_car_speed = 7.5
-
-
-
 
     def highscore(self, count):
         font = pygame.font.SysFont("arial", 20)
@@ -277,7 +291,8 @@ class CarRacing:
     def display_credit(self):
         font = pygame.font.SysFont("lucidaconsole", 18)
         text = font.render("Thanks for playing!", True, self.white)
-        self.gameDisplay.blit(text, (self.m_left,self.display_width*2/3))
+        self.gameDisplay.blit(text, (self.m_left, self.display_width * 2 / 3))
+
 
 if __name__ == '__main__':
     car_racing = CarRacing()
