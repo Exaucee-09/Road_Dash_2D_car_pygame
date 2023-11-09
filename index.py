@@ -25,7 +25,7 @@ road_1_path = os.path.join(os.getcwd(), 'img/dark-yellow2-road.png')
 road_2_path = os.path.join(os.getcwd(), 'img/dark-yellow2-road.png')
 
 backGround_img_path = os.path.join(os.getcwd(), 'img/')
-backGround_sound_path = os.path.join(os.getcwd(), 'sounds/gamemusic-6082.mp3')
+background_sound_path = os.path.join(os.getcwd(), 'sounds/gamemusic-6082.mp3')
 crash_sound_path = os.path.join(os.getcwd(), 'sounds/mixkit-truck-crash-with-explosion-1616.wav')
 new_level_sound_path = os.path.join(os.getcwd(), 'sounds/levelup.wav')
 game_sound_start = os.path.join(os.getcwd(), 'sounds/futuristic-logo-3-versions-149429.mp3')
@@ -150,6 +150,7 @@ class CarRacing:
         # audios
         self.game_menu_sound = pygame.mixer.Sound(game_sound_start)
         self.crash_sound = pygame.mixer.Sound(crash_sound_path)
+        self.background_sound = pygame.mixer.Sound(background_sound_path)
 
         # initializing the screen
         pygame.init()
@@ -159,6 +160,7 @@ class CarRacing:
 
     def menu(self):
         self.game_menu_sound.play()
+        self.background_sound.stop()
         l_high_score, last_score = read_scores()
         menu_font = pygame.font.SysFont("comicsansms", 50)
         menu_loop = True
@@ -215,12 +217,13 @@ class CarRacing:
         while True:
             self.__init__()
             self.menu()
-            pygame.mixer.music.load(backGround_sound_path)
-            pygame.mixer.music.play(-1)
+            self.background_sound.play()
             while not self.crashed:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         self.crashed = True
+                        self.background_sound.stop()
+                        save_scores(self.count, self.count)
                 arduino_data, switch = read_arduino_data()
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_p]:
@@ -280,7 +283,9 @@ class CarRacing:
 
     def change_vehicle(self):
         if self.count < 2000 or self.count > 5000:
-            if self.count % 3 == 0:
+            if self.count > 6000 and self.count % 2 ==0:
+                self.player_car, self.scaled_car_width, car_height = scale_car(player_car2_path)
+            elif self.count % 3 == 0:
                 self.player_car, self.scaled_car_width, car_height = scale_car(player_car1_path)
             elif self.count % 2 == 0:
                 self.player_car, self.scaled_car_width, car_height = scale_car(player_car7_path)
@@ -292,13 +297,13 @@ class CarRacing:
             self.player_car, self.scaled_car_width, car_height = scale_car(player_car6_path)
             self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car4_path)
         elif self.count > 4000:
-            self.player_car, self.scaled_car_width, car_height = scale_car(player_car5_path)
-            self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car3_path)
+            self.player_car, self.scaled_car_width, car_height = scale_car(player_car3_path)
+            self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car2_path)
         elif self.count > 3000:
             self.player_car, self.scaled_car_width, car_height = scale_car(player_car4_path)
-            self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car2_path)
+            self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car3_path)
         elif self.count > 2000:
-            self.player_car, self.scaled_car_width, car_height = scale_car(player_car3_path)
+            self.player_car, self.scaled_car_width, car_height = scale_car(player_car5_path)
             self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car1_path)
         elif self.count > 1000:
             self.bg_speed = 6
@@ -307,18 +312,34 @@ class CarRacing:
     def highscore_and_speed(self):
         font = pygame.font.SysFont("arial", 20)
         font2 = pygame.font.SysFont("lucidaconsole", 23)
+        font3 = pygame.font.SysFont("arial", 11)
+        font4 = pygame.font.SysFont("arial", 13)
         text = font.render("Scores : "+str(self.count), True, (100, 100, 0))
         text1 = font2.render("Your Records", True, (255, 255, 255))
-        text2 = font.render(f"High Scores \n: {self.h_scores}", True, (160, 255, 160))
+        text2 = font.render(f"High Scores: {self.h_scores}", True, (160, 255, 160))
         text3 = font.render(f"Last Scores : {self.l_scores}", True, (160, 160, 255))
-        self.gameDisplay.blit(text, (0, 0))
-        self.gameDisplay.blit(text1, (0, 50))
-        self.gameDisplay.blit(text2, (0, 100))
-        self.gameDisplay.blit(text3, (0, 150))
-        speed_text = font.render(f"Speed  {int(self.count/100)} KM/H ", True, (200, 200, 0))
-        menu_text = font.render(f"Level  {int(self.count/1000)} ", True, (200, 200, 0))
-        self.gameDisplay.blit(menu_text, (0, 200))
-        self.gameDisplay.blit(speed_text, (0, 250))
+        text4 = font4.render(f"Hint : P  to pause", True, (100, 200, 200))
+        text5 = font4.render(f"Hint : R to Resume ", True, (100, 200, 200))
+        text6 = font3.render(f"To Every Level you get a reward ", True, (10, 100, 255))
+        text7 = font3.render(f"a car reward  between Level 2 and 5 ", True, (10, 100, 255))
+        text8 = font3.render(f"And  below or beyond those level ", True, (10, 100, 255))
+        text9 = font3.render(f"you can  change a vehicle in 3 available", True, (10, 100, 255))
+        text10 = font4.render(f"Hint : Click the JoyStick ", True, (100, 200, 255))
+        self.gameDisplay.blit(text, (5, 0))
+        self.gameDisplay.blit(text1, (5, 50))
+        self.gameDisplay.blit(text2, (5, 100))
+        self.gameDisplay.blit(text3, (5, 150))
+        self.gameDisplay.blit(text4, (5, 200))
+        self.gameDisplay.blit(text5, (5, 220))
+        self.gameDisplay.blit(text6, (5, 520))
+        self.gameDisplay.blit(text7, (5, 540))
+        self.gameDisplay.blit(text8, (5, 560))
+        self.gameDisplay.blit(text9, (5, 580))
+        self.gameDisplay.blit(text10, (5, 600))
+        speed_text = font.render(f"{int((self.count/100) +5)} MPH ", True, (0, 200, 200))
+        menu_text = font.render(f"Level  {int(self.count/1000)} ", True, (0, 200, 200))
+        self.gameDisplay.blit(menu_text, (10, 400))
+        self.gameDisplay.blit(speed_text, (50, 450))
         if self.count in increase_speed:
             self.bg_speed += 1 + float(self.count / 1000.0)
             self.enemy_car_speed += 2 + float(self.count / 1000.0)
