@@ -96,6 +96,7 @@ def scale_car(image_path, target_width=100):
     original_width, original_height = car_image.get_rect().size
     aspect_ratio = original_height / original_width
     target_height = int(target_width * aspect_ratio)
+
     scaled_car_image = pygame.transform.scale(car_image, (target_width, target_height))
     return scaled_car_image, target_width, target_height
 
