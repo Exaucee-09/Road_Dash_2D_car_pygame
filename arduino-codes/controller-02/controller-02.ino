@@ -12,7 +12,7 @@ void loop() {
   Serial.print(",");
   Serial.print(joystickY);
   Serial.print(",");
-  if (joystickSwitch> 100) {
+  if (joystickSwitch> 20) {
     Serial.print("0");
   } else {
     Serial.print("1");
