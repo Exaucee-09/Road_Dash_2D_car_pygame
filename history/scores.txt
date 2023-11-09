@@ -1,2 +1,2 @@
-highest_score = 5968
-last_score = 808
+highest_score = 6051
+last_score = 128

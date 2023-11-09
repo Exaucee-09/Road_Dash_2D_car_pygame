@@ -13,6 +13,7 @@ player_car3_path = os.path.join(os.getcwd(), 'img/rolls-royce.png')
 player_car4_path = os.path.join(os.getcwd(), 'img/bugatti.png')
 player_car5_path = os.path.join(os.getcwd(), 'img/rolls.png')
 player_car6_path = os.path.join(os.getcwd(), 'img/keonig.png')
+player_car7_path = os.path.join(os.getcwd(), 'img/benz1-fotor.png')
 player_bike_path = os.path.join(os.getcwd(), 'img/bike-fotor.png')
 
 enemy_car1_path = os.path.join(os.getcwd(), 'img/police-car2.png')
@@ -26,8 +27,9 @@ road_2_path = os.path.join(os.getcwd(), 'img/dark-yellow2-road.png')
 backGround_img_path = os.path.join(os.getcwd(), 'img/')
 backGround_sound_path = os.path.join(os.getcwd(), 'sounds/gamemusic-6082.mp3')
 crash_sound_path = os.path.join(os.getcwd(), 'sounds/mixkit-truck-crash-with-explosion-1616.wav')
-new_level_sound_path = os.path.join(os.getcwd(), 'sounds/new_level.mp3')
+new_level_sound_path = os.path.join(os.getcwd(), 'sounds/levelup.wav')
 game_sound_start = os.path.join(os.getcwd(), 'sounds/futuristic-logo-3-versions-149429.mp3')
+
 # Connect to Arduino
 arduino = serial.Serial('/dev/ttyACM0', 9600)
 
@@ -101,15 +103,18 @@ def scale_car(image_path, target_width=100):
     return scaled_car_image, target_width, target_height
 
 
+increase_speed = (100, 200, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700, 3000, 3300, 3600, 3900, 4200, 4500, 4800,
+                  5100, 5400, 5700, 6000, 6300, 6600, 6900, 7200, 7500, 7800, 8100)
+
+levels = (1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000)
+
+
 class CarRacing:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
         self.display_width = 1200
         self.display_height = 900
-        self.black = (0, 0, 0)
-        self.white = (255, 255, 255)
-        self.red = (255, 0, 0)
         self.clock = pygame.time.Clock()
         self.gameDisplay = None
         self.crashed = False
@@ -118,6 +123,7 @@ class CarRacing:
         self.m_right = int(self.display_width * (4 / 5) - 90)
         self.m_left = int(self.display_width * (1 / 5) + 40)
         self.count = 0
+        self.h_scores, self.l_scores = read_scores()
         # player car
         self.player_car, self.scaled_car_width, car_height = scale_car(player_car2_path)
         self.car_x_coordinate = (self.display_width * 0.5)
@@ -129,7 +135,7 @@ class CarRacing:
         self.bgImg = pygame.transform.scale(self.bgImg, (self.bg_img_width, self.bg_img_height))
         self.bg_speed = 3
         self.bg_x = int(self.display_width * (1 / 5))
-        self.bg_y = 0;
+        self.bg_y = 0
         # Enemy Car
         self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car1_path)
         self.enemy_car_start_x = random.randrange(self.bg_x, self.m_right)
@@ -155,18 +161,17 @@ class CarRacing:
         self.game_menu_sound.play()
         l_high_score, last_score = read_scores()
         menu_font = pygame.font.SysFont("comicsansms", 50)
-        white = (255, 255, 255)
         menu_loop = True
         while menu_loop:
             self.gameDisplay.fill((0, 0, 0))  # Fill the background with black
-            menu_text = menu_font.render("Car Dodge", True, white)
+            menu_text = menu_font.render("Car Dodge", True, (255, 255, 255))
             self.gameDisplay.blit(menu_text, (self.display_width * 0.35, self.display_height * 0.2))
-            play_text = menu_font.render("1. Play Game", True, white)
+            play_text = menu_font.render("1. Play Game", True, (255, 255, 255))
             self.gameDisplay.blit(play_text, (self.display_width * 0.35, self.display_height * 0.4))
-            quit_text = menu_font.render("2. Quit", True, white)
+            quit_text = menu_font.render("2. Quit", True, (255, 0, 0))
             self.gameDisplay.blit(quit_text, (self.display_width * 0.35, self.display_height * 0.5))
-            high_score_text = menu_font.render(f"High Scores = {l_high_score}", True, white)
-            last_score_text = menu_font.render(f"Last Scores = {last_score} ", True, white)
+            high_score_text = menu_font.render(f"High Scores = {l_high_score}", True, (100, 255, 100))
+            last_score_text = menu_font.render(f"Last Scores = {last_score} ", True, (100, 100, 255))
             self.gameDisplay.blit(high_score_text, (self.display_width * 0.35, self.display_height * 0.6))
             self.gameDisplay.blit(last_score_text, (self.display_width * 0.35, self.display_height * 0.7))
             pygame.display.update()
@@ -239,7 +244,7 @@ class CarRacing:
                     if arduino_data == 2:
                         self.car_y_coordinate += 20  # Move backward
 
-                self.gameDisplay.fill(self.black)
+                self.gameDisplay.fill((0, 0, 0))
                 # Logic to loop road image
                 self.bg_y += self.bg_speed
                 if self.bg_y >= self.display_height:
@@ -254,18 +259,16 @@ class CarRacing:
                     self.enemy_car_start_x = random.randrange(self.m_left, self.m_right)
 
                 self.car(self.car_x_coordinate, self.car_y_coordinate)
-                self.highscore(self.count)
+                self.highscore_and_speed()
                 self.count += 1
-                self.increase_speed()
+                self.score_reward_vehicle()
                 self.detect_collisions()
-                self.handle_special_score()
-
                 pygame.display.update()
                 self.clock.tick(60)
 
     def display_message(self, msg):
         font = pygame.font.SysFont("comicsansms", 72, True)
-        text = font.render(msg, True, self.red)
+        text = font.render(msg, True, (255, 0, 0))
         self.gameDisplay.blit(text, (self.m_left, self.display_width * 1 / 3))
         self.display_credit()
         pygame.display.update()
@@ -276,59 +279,56 @@ class CarRacing:
         self.gameDisplay.blit(self.enemy_car, (thingx, thingy))
 
     def change_vehicle(self):
-        if self.count < 2000:
+        if self.count < 2000 or self.count > 5000:
             if self.count % 3 == 0:
                 self.player_car, self.scaled_car_width, car_height = scale_car(player_car1_path)
             elif self.count % 2 == 0:
-                self.player_car, self.scaled_car_width, car_height = scale_car(player_car2_path)
+                self.player_car, self.scaled_car_width, car_height = scale_car(player_car7_path)
             else:
                 self.player_car, self.scaled_car_width, car_height = scale_car(player_bike_path)
 
-    def handle_special_score(self):
-        level_font = pygame.font.SysFont("comicsansms", 50)
-        if self.count in (1000, 2000, 3000, 4000, 5000, 6000):
-            start_time = pygame.time.get_ticks()
-            display_duration = 3000  # Display the message for 3000 milliseconds (adjust as needed)
-
-            while pygame.time.get_ticks() - start_time < display_duration:
-                menu_text = level_font.render(f"New level with {self.count} scores", True, (255, 200, 255))
-                pygame.mixer.Sound(new_level_sound_path).play()
-                self.gameDisplay.blit(menu_text, (self.display_width * 0.45, self.display_height * 0.4))
-                pygame.display.update()
-
-    def increase_speed(self):
+    def score_reward_vehicle(self):
         if self.count > 5000:
-            self.bg_speed = 15
-            self.enemy_car_speed = 17
             self.player_car, self.scaled_car_width, car_height = scale_car(player_car6_path)
             self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car4_path)
         elif self.count > 4000:
-            self.bg_speed = 13
-            self.enemy_car_speed = 15
             self.player_car, self.scaled_car_width, car_height = scale_car(player_car5_path)
             self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car3_path)
         elif self.count > 3000:
-            self.bg_speed = 12
-            self.enemy_car_speed = 13.5
             self.player_car, self.scaled_car_width, car_height = scale_car(player_car4_path)
             self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car2_path)
         elif self.count > 2000:
-            self.bg_speed = 9
-            self.enemy_car_speed = 10
             self.player_car, self.scaled_car_width, car_height = scale_car(player_car3_path)
             self.enemy_car, self.enemy_car_width, self.enemy_car_height = scale_car(enemy_car1_path)
         elif self.count > 1000:
             self.bg_speed = 6
             self.enemy_car_speed = 7.5
 
-    def highscore(self, count):
+    def highscore_and_speed(self):
         font = pygame.font.SysFont("arial", 20)
-        text = font.render("Score : " + str(count), True, self.white)
+        font2 = pygame.font.SysFont("lucidaconsole", 23)
+        text = font.render("Scores : "+str(self.count), True, (100, 100, 0))
+        text1 = font2.render("Your Records", True, (255, 255, 255))
+        text2 = font.render(f"High Scores \n: {self.h_scores}", True, (160, 255, 160))
+        text3 = font.render(f"Last Scores : {self.l_scores}", True, (160, 160, 255))
         self.gameDisplay.blit(text, (0, 0))
+        self.gameDisplay.blit(text1, (0, 50))
+        self.gameDisplay.blit(text2, (0, 100))
+        self.gameDisplay.blit(text3, (0, 150))
+        speed_text = font.render(f"Speed  {int(self.count/100)} KM/H ", True, (200, 200, 0))
+        menu_text = font.render(f"Level  {int(self.count/1000)} ", True, (200, 200, 0))
+        self.gameDisplay.blit(menu_text, (0, 200))
+        self.gameDisplay.blit(speed_text, (0, 250))
+        if self.count in increase_speed:
+            self.bg_speed += 1 + float(self.count / 1000.0)
+            self.enemy_car_speed += 2 + float(self.count / 1000.0)
+        if self.count in levels:
+            pygame.mixer.Sound(new_level_sound_path).play()
+        pygame.display.update()
 
     def display_credit(self):
         font = pygame.font.SysFont("lucidaconsole", 18)
-        text = font.render("Thanks for playing!", True, self.white)
+        text = font.render("Thanks for playing!", True, (255, 255, 255))
         self.gameDisplay.blit(text, (self.m_left, self.display_width * 2 / 3))
 
 
