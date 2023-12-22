@@ -12,11 +12,12 @@ player_car3_path = os.path.join(os.getcwd(), 'img/bugatti.png')
 enemy_car1_path = os.path.join(os.getcwd(), 'img/police-car2.png')
 enemy_car2_path = os.path.join(os.getcwd(), 'img/police-car.png')
 enemy_car3_path = os.path.join(os.getcwd(), 'img/police-car.png')
-road_1_path = os.path.join(os.getcwd(),'img/dark-yellow2-road.png')
-road_2_path = os.path.join(os.getcwd(),'img/dark-yellow2-road.png')
+road_1_path = os.path.join(os.getcwd(), 'img/dark-yellow2-road.png')
+road_2_path = os.path.join(os.getcwd(), 'img/dark-yellow2-road.png')
 backGround_img_path = os.path.join(os.getcwd(), 'img/')
 backGround_sound_path = os.path.join(os.getcwd(), 'sounds/mixkit-game-level-music-689.wav')
 crash_sound_path = os.path.join(os.getcwd(), 'sounds/mixkit-truck-crash-with-explosion-1616.wav')
+
 
 # Connect to Arduino
 
@@ -35,6 +36,7 @@ def read_scores():
                 last_score = int(line.split('=')[-1])
 
     return highest_score, last_score
+
 
 def save_scores(new_highest_score, new_last_score):
     try:
@@ -59,7 +61,7 @@ def scale_car(image_path, target_width=100):
     aspect_ratio = original_height / original_width
     target_height = int(target_width * aspect_ratio)
     scaled_car_image = pygame.transform.scale(car_image, (target_width, target_height))
-    return scaled_car_image, target_width,target_height
+    return scaled_car_image, target_width, target_height
 
 
 class CarRacing:
@@ -101,7 +103,6 @@ class CarRacing:
         self.m_left = int(self.display_width * (1 / 5) + 40)
         self.count = 0
 
-
         # audios
         pygame.mixer.music.load(backGround_sound_path)
         pygame.mixer.music.play(-1)
@@ -113,14 +114,13 @@ class CarRacing:
         pygame.display.set_caption('Car Dodge')
         pygame.mixer.init()
 
-
     def menu(self):
-        l_high_score,last_score = read_scores()
+        l_high_score, last_score = read_scores()
         menu_font = pygame.font.SysFont("comicsansms", 50)
         white = (255, 255, 255)
         menu_loop = True
         while menu_loop:
-            self.gameDisplay.fill((0,0,0))  # Fill the background with black
+            self.gameDisplay.fill((0, 0, 0))  # Fill the background with black
             menu_text = menu_font.render("Car Dodge", True, white)
             self.gameDisplay.blit(menu_text, (self.display_width * 0.35, self.display_height * 0.2))
             play_text = menu_font.render("1. Play Game", True, white)
@@ -144,6 +144,7 @@ class CarRacing:
                         print("Goodbye!")
                         pygame.quit()
                         menu_loop = False
+
     def detect_collisions(self):
         if self.car_y_coordinate < self.enemy_car_start_y + self.enemy_car_height:
             if (
@@ -153,18 +154,17 @@ class CarRacing:
                 self.crash_sound.play()
                 self.display_message("Game Over U knocked !!!")
 
-
         if self.car_x_coordinate < self.m_left or self.car_x_coordinate > self.m_right:
             self.crashed = True
             self.display_message("Game Over !!!")
         save_scores(self.count, self.count)
+
     def show_background(self):
         self.gameDisplay.blit(self.bgImg, (self.bg_x, self.bg_y))
         self.gameDisplay.blit(self.bgImg, (self.bg_x, self.bg_y - self.display_height))
 
     def car(self, car_x_coordinate, car_y_coordinate):
         self.gameDisplay.blit(self.carImg, (car_x_coordinate, car_y_coordinate))
-
 
     def start_game(self):
 
@@ -178,21 +178,21 @@ class CarRacing:
                     elif event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_LEFT:
                             self.car_x_coordinate -= 25
-                            print ("CAR X COORDINATES: %s" % self.car_x_coordinate)
+                            print("CAR X COORDINATES: %s" % self.car_x_coordinate)
                         elif event.key == pygame.K_RIGHT:
                             self.car_x_coordinate += 25
-                            print ("CAR X COORDINATE: %s" % self.car_x_coordinate)
+                            print("CAR X COORDINATE: %s" % self.car_x_coordinate)
                         elif event.key == pygame.K_UP:
                             self.car_y_coordinate -= 30  # Move forward
-                            print ("CAR Y COORDINAT E: %s" % self.car_y_coordinate)
-                        elif self.car_y_coordinate<(self.display_height * 0.78):
+                            print("CAR Y COORDINAT E: %s" % self.car_y_coordinate)
+                        elif self.car_y_coordinate < (self.display_height * 0.78):
                             if event.key == pygame.K_DOWN:
                                 self.car_y_coordinate += 30  # Move backward
-                                print ("CAR X COORDINATES: %s" % self.car_y_coordinate)
-                        print ("x: {x}, y: {y}".format(x=self.car_x_coordinate, y=self.car_y_coordinate))
+                                print("CAR X COORDINATES: %s" % self.car_y_coordinate)
+                        print("x: {x}, y: {y}".format(x=self.car_x_coordinate, y=self.car_y_coordinate))
 
                 self.gameDisplay.fill(self.black)
-                #Logic to loop load
+                # Logic to loop load
                 self.bg_y += self.bg_speed
                 if self.bg_y >= self.display_height:
                     self.bg_y = 0
@@ -211,18 +211,13 @@ class CarRacing:
                 self.increase_speed()
                 self.detect_collisions()
 
-
-
-
-
                 pygame.display.update()
                 self.clock.tick(60)
-
 
     def display_message(self, msg):
         font = pygame.font.SysFont("comicsansms", 72, True)
         text = font.render(msg, True, self.red)
-        self.gameDisplay.blit(text, (self.m_left,self.display_width*1/3))
+        self.gameDisplay.blit(text, (self.m_left, self.display_width * 1 / 3))
         self.display_credit()
         pygame.display.update()
         self.clock.tick(60)
@@ -233,7 +228,7 @@ class CarRacing:
 
     def increase_speed(self):
         if self.count > 5000:
-            self .bg_speed = 15
+            self.bg_speed = 15
             self.enemy_car_speed = 17
         elif self.count > 4000:
             self.bg_speed = 13
@@ -248,9 +243,6 @@ class CarRacing:
             self.bg_speed = 6
             self.enemy_car_speed = 7.5
 
-
-
-
     def highscore(self, count):
         font = pygame.font.SysFont("arial", 20)
         text = font.render("Score : " + str(count), True, self.white)
@@ -259,7 +251,8 @@ class CarRacing:
     def display_credit(self):
         font = pygame.font.SysFont("lucidaconsole", 18)
         text = font.render("Thanks for playing!", True, self.white)
-        self.gameDisplay.blit(text, (self.m_left,self.display_width*2/3))
+        self.gameDisplay.blit(text, (self.m_left, self.display_width * 2 / 3))
+
 
 if __name__ == '__main__':
     car_racing = CarRacing()

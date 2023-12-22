@@ -34,31 +34,6 @@ crash_sound_path = os.path.join(os.getcwd(), 'sounds/mixkit-truck-crash-with-exp
 new_level_sound_path = os.path.join(os.getcwd(), 'sounds/levelup.wav')
 game_sound_start = os.path.join(os.getcwd(), 'sounds/futuristic-logo-3-versions-149429.mp3')
 
-# Connect to Arduino
-arduino = serial.Serial('/dev/ttyACM0', 9600)
-
-
-def read_arduino_data():
-    try:
-        serial_data = arduino.readline().decode().strip().split(",")
-        joystick_x = int(serial_data[0])
-        joystick_y = int(serial_data[1])
-        joystick_sw = int(serial_data[2])
-        if not joystick_sw:
-            joystick_sw = 0
-    except (ValueError, IndexError):
-        joystick_x, joystick_y = 0, 0
-
-    if 0 <= joystick_x <= 250 and 251 <= joystick_y <= 558:
-        return 1, joystick_sw
-    elif 560 <= joystick_x and 251 <= joystick_y <= 558:
-        return 2, joystick_sw
-    elif 251 <= joystick_x <= 558 and 560 <= joystick_y:
-        return 3, joystick_sw
-    elif 251 <= joystick_x <= 558 and 0 <= joystick_y <= 250:
-        return 4, joystick_sw
-    return 0, joystick_sw
-
 
 # function to read Scores on  the scores file
 def read_scores():
@@ -232,8 +207,16 @@ class CarRacing:
                         self.crashed = True
                         self.background_sound.stop()
                         save_scores(self.count, self.count)
-                arduino_data, switch = read_arduino_data()
                 keys = pygame.key.get_pressed()
+                if keys[pygame.K_LEFT]:
+                    self.car_x_coordinate -= 10
+                if keys[pygame.K_RIGHT]:
+                    self.car_x_coordinate += 10
+                if keys[pygame.K_UP]:
+                    self.car_y_coordinate -= 10
+                if self.car_y_coordinate < (self.display_height * 0.78):
+                    if keys[pygame.K_DOWN]:
+                        self.car_y_coordinate += 10
                 if keys[pygame.K_p]:
                     self.paused = True
                 if keys[pygame.K_r]:
@@ -242,18 +225,8 @@ class CarRacing:
                     self.display_message("Paused")
                     pygame.display.update()
                     continue
-                if switch == 1:
+                if keys[pygame.K_s]:
                     self.change_vehicle()
-
-                if arduino_data == 3:
-                    self.car_x_coordinate -= 20  # Move left
-                elif arduino_data == 4:
-                    self.car_x_coordinate += 20  # Move right
-                elif arduino_data == 1:
-                    self.car_y_coordinate -= 20  # Move forward
-                elif self.car_y_coordinate < (self.display_height * 0.78):
-                    if arduino_data == 2:
-                        self.car_y_coordinate += 20  # Move backward
 
                 self.gameDisplay.fill((0, 0, 0))
                 # Logic to loop road image

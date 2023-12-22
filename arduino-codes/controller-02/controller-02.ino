@@ -1,23 +1,25 @@
-int joystickX, joystickY, joystickSwitch; 
+const int joyXPin1 = A0;
+const int joyYPin1 = A1;
+const int joyXPin2 = A2;
+const int joyYPin2 = A3;
 
 void setup() {
-  Serial.begin(9600); 
+  Serial.begin(9600);
 }
 
 void loop() {
-  joystickX = analogRead(A0);
-  joystickY = analogRead(A1);
-  joystickSwitch = analogRead(A2);
-  Serial.print(joystickX);
-  Serial.print(",");
-  Serial.print(joystickY);
-  Serial.print(",");
-  if (joystickSwitch> 20) {
-    Serial.print("0");
-  } else {
-    Serial.print("1");
-  }
-  Serial.println();
-  delay(50);
-}
+  int joyX1 = analogRead(joyXPin1);
+  int joyY1 = analogRead(joyYPin1);
+  int joyX2 = analogRead(joyXPin2);
+  int joyY2 = analogRead(joyYPin2);
 
+  Serial.print(joyX1);
+  Serial.print(",");
+  Serial.print(joyY1);
+  Serial.print(",");
+  Serial.print(joyX2);
+  Serial.print(",");
+  Serial.print(joyY2);
+  Serial.println("");
+  delay(100);
+}
